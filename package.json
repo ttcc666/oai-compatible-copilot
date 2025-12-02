@@ -58,8 +58,30 @@
 			{
 				"command": "oaicopilot.setProviderApikey",
 				"title": "OAICopilot: Set OAI Compatible Multi-Provider Apikey"
+			},
+			{
+				"command": "oaicopilot.openConfigPanel",
+				"title": "OAICopilot: Open Configuration Panel",
+				"icon": "$(settings-gear)"
 			}
 		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "oaicopilot-config",
+					"title": "OAI Copilot Config",
+					"icon": "$(settings-gear)"
+				}
+			]
+		},
+		"views": {
+			"oaicopilot-config": [
+				{
+					"id": "oaicopilot.configView",
+					"name": "Configuration"
+				}
+			]
+		},
 		"configuration": {
 			"title": "OAI Compatible Copilot",
 			"properties": {
@@ -100,10 +122,10 @@
 							},
 							"context_length": {
 								"type": "number",
-								"default": 128000,
+								"default": 256000,
 								"minimum": 1000,
 								"maximum": 10000000,
-								"description": "Model support context length. Default is 128000."
+								"description": "Model support context length. Default is 256000."
 							},
 							"vision": {
 								"type": "boolean",
@@ -112,14 +134,14 @@
 							},
 							"max_tokens": {
 								"type": "number",
-								"default": 4096,
+								"default": 8132,
 								"minimum": 1,
 								"maximum": 10000000,
-								"description": "Maximum number of tokens to generate (range: [1, context_length)). Default is 4096."
+								"description": "Maximum number of tokens to generate (range: [1, context_length)). Default is 8132."
 							},
 							"max_completion_tokens": {
 								"type": "number",
-								"default": 4096,
+								"default": 8132,
 								"minimum": 1,
 								"maximum": 10000000,
 								"description": "Maximum number of tokens to generate (OpenAI new standard parameter)."
@@ -306,7 +328,8 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"download-api": "dts dev && mv vscode.proposed.*.ts src",
-		"compile": "tsc -p ./",
+		"compile": "tsc -p ./ && npm run copy-resources",
+		"copy-resources": "node -e \"const fs = require('fs'); fs.mkdirSync('out/webview/ui', {recursive: true}); fs.cpSync('src/webview/ui/index.html', 'out/webview/ui/index.html'); fs.cpSync('src/webview/ui/style.css', 'out/webview/ui/style.css'); fs.cpSync('src/webview/ui/main.js', 'out/webview/ui/main.js');\"",
 		"lint": "eslint",
 		"format": "prettier --write .",
 		"watch": "tsc -watch -p ./",

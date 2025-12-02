@@ -171,8 +171,8 @@ All parameters support individual configuration for different models, providing 
 - `configId`: Configuration ID for this model. Allows defining the same model with different settings (e.g. 'glm-4.6::thinking', 'glm-4.6::no-thinking')
 - `family`: Model family (e.g., 'gpt-4', 'claude-3', 'gemini'). Enables model-specific optimizations and behaviors. Defaults to 'oai-compatible' if not specified.
 - `baseUrl`: Model-specific base URL. If not provided, the global `oaicopilot.baseUrl` will be used
-- `context_length`: The context length supported by the model. Default value is 128000
-- `max_tokens`: Maximum number of tokens to generate (range: [1, context_length]). Default value is 4096
+- `context_length`: The context length supported by the model. Default value is 256000
+- `max_tokens`: Maximum number of tokens to generate (range: [1, context_length]). Default value is 8132
 - `max_completion_tokens`: Maximum number of tokens to generate (OpenAI new standard parameter)
 - `vision`: Whether the model supports vision capabilities. Defaults to false
 - `temperature`: Sampling temperature (range: [0, 2]). Lower values make the output more deterministic, higher values more creative. Default value is 0

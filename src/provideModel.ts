@@ -3,8 +3,8 @@ import { CancellationToken, LanguageModelChatInformation } from "vscode";
 
 import type { HFModelItem, HFModelsResponse } from "./types";
 
-const DEFAULT_CONTEXT_LENGTH = 128000;
-const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_CONTEXT_LENGTH = 256000;
+const DEFAULT_MAX_TOKENS = 8132;
 
 /**
  * Get the list of available language models contributed by this provider

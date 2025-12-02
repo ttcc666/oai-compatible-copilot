@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Location)",
+      "Bash(npm run compile)",
+      "Bash(Remove-Item \"d:\\Study\\Github\\oai-myself\\src\\webview\\ui\\main.ts\")",
+      "Bash(Test-Path:*)",
+      "Bash(Get-ChildItem -Path \"out\" -Recurse -File)",
+      "Bash(Select-Object -First 20 FullName)",
+      "Bash(npm run build)",
+      "Bash(Get-ChildItem -Path \"out/webview/ui\" -File)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

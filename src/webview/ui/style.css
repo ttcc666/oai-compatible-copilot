@@ -1,0 +1,196 @@
+body {
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+    padding: 0;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* 标题样式 */
+h1 {
+    font-size: 28px;
+    font-weight: 500;
+    margin-bottom: 30px;
+    color: var(--vscode-settings-headerForeground);
+    border-bottom: 1px solid var(--vscode-settings-dropdownBorder);
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: var(--vscode-sideBarTitle-foreground);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+/* 卡片容器 */
+.config-section {
+    background-color: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+/* 表单组间距 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--vscode-input-placeholderForeground);
+}
+
+
+/* 输入框通用样式 */
+input[type="text"],
+input[type="password"],
+input[type="number"] {
+    width: 100%;
+    height: 32px;
+    padding: 4px 10px;
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 2px;
+    font-family: inherit;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--vscode-focusBorder);
+    box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+/* 按钮通用样式 */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-button-background);
+    box-sizing: border-box;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.btn-secondary {
+    color: var(--vscode-button-secondaryForeground);
+    background-color: var(--vscode-button-secondaryBackground);
+}
+
+.btn-secondary:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.btn-success {
+    background-color: var(--vscode-testing-iconPassed);
+    color: var(--vscode-editor-background);
+    font-weight: 600;
+    width: 100%;
+    height: 36px;
+}
+
+/* SVG 图标 */
+.icon {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    margin-right: 6px;
+}
+
+.btn-icon-only {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+}
+.btn-icon-only .icon {
+    margin-right: 0;
+}
+
+/* 表格样式 */
+#modelsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+#modelsTable th, #modelsTable td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    text-align: left;
+}
+
+#modelsTable th {
+    background-color: var(--vscode-editor-lineHighlightBackground);
+    font-weight: 600;
+}
+
+#modelsTable tr:last-child td {
+    border-bottom: none;
+}
+
+/* 状态消息 */
+.status-message {
+    margin-left: 10px;
+    font-size: 12px;
+}
+.status-message.success { color: var(--vscode-testing-iconPassed); }
+.status-message.error { color: var(--vscode-errorForeground); }
+
+/* 模型编辑表单 */
+.model-form {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--vscode-editor-background);
+    border: 1px dashed var(--vscode-focusBorder);
+    border-radius: 4px;
+}
+.grid-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+.full-width { grid-column: span 2; }
+.required { color: var(--vscode-errorForeground); margin-left: 2px; }

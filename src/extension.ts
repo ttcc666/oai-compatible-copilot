@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import { HuggingFaceChatModelProvider } from "./provider";
 import type { HFModelItem } from "./types";
+import { ConfigPanel } from "./webview/configPanel";
+import { ConfigManager } from "./webview/configManager";
+import { ConfigViewProvider } from "./webview/configViewProvider";
 
 export function activate(context: vscode.ExtensionContext) {
 	// Build a descriptive User-Agent to help quantify API usage
@@ -13,6 +16,15 @@ export function activate(context: vscode.ExtensionContext) {
 	const provider = new HuggingFaceChatModelProvider(context.secrets, ua);
 	// Register the Hugging Face provider under the vendor id used in package.json
 	vscode.lm.registerLanguageModelChatProvider("oaicopilot", provider);
+
+	// 创建配置管理器
+	const configManager = new ConfigManager(context.secrets, ua);
+
+	// 注册Activity Bar视图
+	const configViewProvider = new ConfigViewProvider(context.extensionUri, configManager);
+	context.subscriptions.push(
+		vscode.window.registerTreeDataProvider("oaicopilot.configView", configViewProvider)
+	);
 
 	// Management command to configure API key
 	context.subscriptions.push(
@@ -92,6 +104,28 @@ export function activate(context: vscode.ExtensionContext) {
 
 			await context.secrets.store(providerKey, apiKey.trim());
 			vscode.window.showInformationMessage(`API key for ${selectedProvider} saved.`);
+		})
+	);
+
+	// 注册打开配置面板命令
+	context.subscriptions.push(
+		vscode.commands.registerCommand("oaicopilot.openConfigPanel", () => {
+			ConfigPanel.createOrShow(context.extensionUri, configManager);
+		})
+	);
+
+	// 注册刷新模型列表命令
+	context.subscriptions.push(
+		vscode.commands.registerCommand("oaicopilot.refreshModels", () => {
+			configViewProvider.refresh();
+			vscode.window.showInformationMessage("模型列表已刷新");
+		})
+	);
+
+	// 注册查看文档命令
+	context.subscriptions.push(
+		vscode.commands.registerCommand("oaicopilot.openDocs", () => {
+			vscode.env.openExternal(vscode.Uri.parse("https://github.com/JohnnyZ93/oai-compatible-copilot"));
 		})
 	);
 }
