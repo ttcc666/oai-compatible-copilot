@@ -42,6 +42,52 @@
 
         <section class="config-section">
             <h2>
+                <svg class="icon" viewBox="0 0 16 16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 13A6 6 0 118 2a6 6 0 010 12z"/><path d="M8 4a4 4 0 100 8 4 4 0 000-8zm0 7a3 3 0 110-6 3 3 0 010 6z"/></svg>
+                代理配置
+            </h2>
+            <p style="color: var(--vscode-descriptionForeground); margin-bottom: 15px; font-size: 13px;">
+                配置代理以解决 DNS 污染或网络访问问题。支持 HTTP/HTTPS/SOCKS5 代理。
+            </p>
+
+            <div class="form-group">
+                <label for="proxyUrl">代理地址</label>
+                <input type="text" id="proxyUrl" placeholder="例如: http://127.0.0.1:7897" />
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px;">
+                    支持格式：http://127.0.0.1:7897 或 socks5://127.0.0.1:1080
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="proxyStrictSSL" />
+                    <span style="margin-left: 8px;">严格验证 SSL 证书</span>
+                </label>
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px; margin-left: 24px;">
+                    某些代理可能需要禁用此选项
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="proxySupport">代理支持级别</label>
+                <select id="proxySupport">
+                    <option value="on">启用代理</option>
+                    <option value="off">禁用代理</option>
+                    <option value="fallback">代理失败时回退到直连</option>
+                    <option value="override">强制使用代理</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button id="saveProxy" class="btn">
+                    <svg class="icon" viewBox="0 0 16 16"><path d="M11 2H9v3h2V2zm2 0h-1v3h1V2zm0 11H3V6h10v7zM3 5V4h1v1H3zm10 0V4h-1v1h1zm-5-3H5v3h3V2z" fill-rule="evenodd"/></svg>
+                    保存代理配置
+                </button>
+                <span id="proxyStatus" class="status-message"></span>
+            </div>
+        </section>
+
+        <section class="config-section">
+            <h2>
                 <svg class="icon" viewBox="0 0 16 16"><path d="M5 4h6v2H5zM5 7h6v2H5zM5 10h6v2H5z" fill-rule="evenodd"/><path d="M2 2v12h12V2H2zm1 1h10v10H3V3z" fill-rule="evenodd"/></svg>
                 模型列表
             </h2>

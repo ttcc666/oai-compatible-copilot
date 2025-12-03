@@ -14,6 +14,11 @@ const apiKeyInput = document.getElementById("apiKey");
 const saveApiKeyBtn = document.getElementById("saveApiKey");
 const testConnectionBtn = document.getElementById("testConnection");
 const connectionStatus = document.getElementById("connectionStatus");
+const proxyUrlInput = document.getElementById("proxyUrl");
+const proxyStrictSSLCheckbox = document.getElementById("proxyStrictSSL");
+const proxySupportSelect = document.getElementById("proxySupport");
+const saveProxyBtn = document.getElementById("saveProxy");
+const proxyStatus = document.getElementById("proxyStatus");
 const fetchModelsBtn = document.getElementById("fetchModels");
 const toggleAddModelBtn = document.getElementById("toggleAddModel");
 const modelsTableBody = document.getElementById("modelsTableBody");
@@ -56,6 +61,9 @@ window.addEventListener("message", (event) => {
 		case "saveResult":
 			showSaveStatus(message.data);
 			break;
+		case "proxyResult":
+			showProxyStatus(message.data);
+			break;
 		case "confirmDelete":
 			// 用户确认删除，执行删除操作
 			executeDelete(message.data.index);
@@ -87,6 +95,9 @@ function executeDelete(index) {
 function loadConfig(data) {
 	baseUrlInput.value = data.baseUrl || "";
 	apiKeyInput.value = data.apiKey || "";
+	proxyUrlInput.value = data.proxyUrl || "";
+	proxyStrictSSLCheckbox.checked = data.proxyStrictSSL !== false; // 默认为 true
+	proxySupportSelect.value = data.proxySupport || "on";
 	currentModels = data.models || [];
 	renderModelsTable();
 }
@@ -203,6 +214,17 @@ function showSaveStatus(data) {
 
 	setTimeout(() => {
 		saveStatus.textContent = "";
+	}, 3000);
+}
+
+// 显示代理保存状态
+function showProxyStatus(data) {
+	proxyStatus.textContent = data.message;
+	proxyStatus.className = `status-message ${data.success ? "success" : "error"}`;
+	saveProxyBtn.disabled = false;
+
+	setTimeout(() => {
+		proxyStatus.textContent = "";
 	}, 3000);
 }
 
@@ -400,6 +422,25 @@ saveAllConfigBtn.addEventListener("click", () => {
 		data: {
 			baseUrl,
 			models: currentModels,
+		},
+	});
+});
+
+saveProxyBtn.addEventListener("click", () => {
+	const proxyUrl = proxyUrlInput.value.trim();
+	const proxyStrictSSL = proxyStrictSSLCheckbox.checked;
+	const proxySupport = proxySupportSelect.value;
+
+	saveProxyBtn.disabled = true;
+	proxyStatus.textContent = "保存中...";
+	proxyStatus.className = "status-message";
+
+	vscode.postMessage({
+		command: "saveProxy",
+		data: {
+			proxyUrl,
+			proxyStrictSSL,
+			proxySupport,
 		},
 	});
 });

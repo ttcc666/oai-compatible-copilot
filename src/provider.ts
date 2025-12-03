@@ -25,6 +25,7 @@ import {
 	parseModelId,
 	createRetryConfig,
 	executeWithRetry,
+	fetchWithProxy,
 } from "./utils";
 
 import { prepareLanguageModelChatInformation } from "./provideModel";
@@ -245,7 +246,7 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 			// send chat request with retry
 			const response = await executeWithRetry(
 				async () => {
-					const res = await fetch(`${BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
+					const res = await fetchWithProxy(`${BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
 						method: "POST",
 						headers: requestHeaders,
 						body: JSON.stringify(requestBody),
@@ -497,8 +498,12 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 						// console.log("[OAI Compatible Model Provider] Chunk Data:", parsed);
 
 						await this.processDelta(parsed, progress);
-					} catch {
-						// Silently ignore malformed SSE lines temporarily
+					} catch (parseError) {
+						// Log malformed SSE lines for debugging
+						console.warn("[OAI Compatible Model Provider] Failed to parse SSE chunk:", {
+							error: parseError instanceof Error ? parseError.message : String(parseError),
+							dataSnippet: data.slice(0, 200),
+						});
 					}
 				}
 			}
@@ -652,6 +657,12 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 			}
 
 			for (const tc of toolCalls) {
+				// 验证工具调用对象的基本结构
+				if (!tc || typeof tc !== "object") {
+					console.warn("[OAI Compatible Model Provider] Invalid tool call object:", tc);
+					continue;
+				}
+
 				const idx = (tc.index as number) ?? 0;
 				// Ignore any further deltas for an index we've already completed
 				if (this._completedToolCallIndices.has(idx)) {
@@ -662,6 +673,13 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 					buf.id = tc.id as string;
 				}
 				const func = tc.function as Record<string, unknown> | undefined;
+
+				// 验证 function 对象
+				if (!func || typeof func !== "object") {
+					console.warn("[OAI Compatible Model Provider] Invalid function object in tool call:", tc);
+					continue;
+				}
+
 				if (func?.name && typeof func.name === "string") {
 					buf.name = func.name as string;
 				}
@@ -791,20 +809,35 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 			return;
 		}
 		for (const [idx, buf] of Array.from(this._toolCallBuffers.entries())) {
+			// 验证缓冲区数据的完整性
+			if (!buf.name) {
+				console.warn("[OAI Compatible Model Provider] Tool call missing name", {
+					idx,
+					hasId: !!buf.id,
+					argsLength: buf.args?.length || 0,
+				});
+				if (throwOnInvalid) {
+					throw new Error(`Tool call at index ${idx} is missing function name`);
+				}
+				continue;
+			}
+
 			const parsed = tryParseJSONObject(buf.args);
 			if (!parsed.ok) {
 				if (throwOnInvalid) {
 					console.error("[OAI Compatible Model Provider] Invalid JSON for tool call", {
 						idx,
+						name: buf.name,
+						id: buf.id,
 						snippet: (buf.args || "").slice(0, 200),
 					});
-					throw new Error("Invalid JSON for tool call");
+					throw new Error(`Invalid JSON for tool call "${buf.name}": ${buf.args.slice(0, 100)}`);
 				}
 				// When not throwing (e.g. on [DONE]), drop silently to reduce noise
 				continue;
 			}
 			const id = buf.id ?? `call_${Math.random().toString(36).slice(2, 10)}`;
-			const name = buf.name ?? "unknown_tool";
+			const name = buf.name;
 			try {
 				const canonical = JSON.stringify(parsed.value);
 				this._emittedTextToolCallKeys.add(`${name}:${canonical}`);

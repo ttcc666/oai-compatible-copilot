@@ -68,6 +68,11 @@ export interface HFModelItem {
 	architecture?: HFArchitecture;
 	context_length?: number;
 	vision?: boolean;
+	/**
+	 * Whether the model supports tool calling. Set to false to disable tool calling for this model.
+	 * Defaults to true if not specified.
+	 */
+	toolCalling?: boolean;
 	max_tokens?: number;
 	// OpenAI new standard parameter
 	max_completion_tokens?: number;

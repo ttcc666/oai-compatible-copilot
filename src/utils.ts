@@ -539,3 +539,76 @@ export async function executeWithRetry<T>(
 	// This should never be reached, but TypeScript needs it
 	throw lastError || new Error("Retry failed");
 }
+
+/**
+ * 代理配置接口
+ */
+interface ProxyConfig {
+	proxy?: string;
+	proxyStrictSSL?: boolean;
+	proxySupport?: string;
+}
+
+/**
+ * 读取 VSCode 代理配置
+ */
+export function getProxyConfig(): ProxyConfig {
+	const httpConfig = vscode.workspace.getConfiguration("http");
+	return {
+		proxy: httpConfig.get<string>("proxy"),
+		proxyStrictSSL: httpConfig.get<boolean>("proxyStrictSSL", true),
+		proxySupport: httpConfig.get<string>("proxySupport", "on"),
+	};
+}
+
+/**
+ * 创建代理 Agent
+ */
+function createProxyAgent(proxyUrl: string, strictSSL: boolean) {
+	// 动态导入 undici
+	const { ProxyAgent } = require("undici");
+	return new ProxyAgent({
+		uri: proxyUrl,
+		connect: {
+			rejectUnauthorized: strictSSL,
+		},
+	});
+}
+
+/**
+ * 支持代理的 fetch 函数
+ * 自动读取 VSCode 代理配置，支持 HTTP/HTTPS/SOCKS5 代理
+ */
+export async function fetchWithProxy(url: string, options?: RequestInit): Promise<Response> {
+	const proxyConfig = getProxyConfig();
+
+	// 检查是否需要使用代理
+	if (proxyConfig.proxy && proxyConfig.proxySupport !== "off" && proxyConfig.proxy.trim() !== "") {
+		try {
+			console.log(`[OAI Compatible Model Provider] Using proxy: ${proxyConfig.proxy}`);
+			console.log(`[OAI Compatible Model Provider] Proxy SSL verification: ${proxyConfig.proxyStrictSSL}`);
+
+			const agent = createProxyAgent(proxyConfig.proxy, proxyConfig.proxyStrictSSL ?? true);
+
+			// 使用 undici 的 fetch，支持代理
+			const { fetch: undiciFetch } = require("undici");
+			return (await undiciFetch(url, {
+				...options,
+				dispatcher: agent,
+			})) as Response;
+		} catch (error) {
+			console.error("[OAI Compatible Model Provider] Proxy connection failed:", error);
+
+			// 如果代理支持级别是 fallback，尝试直连
+			if (proxyConfig.proxySupport === "fallback") {
+				console.warn("[OAI Compatible Model Provider] Falling back to direct connection");
+				return fetch(url, options);
+			}
+
+			throw error;
+		}
+	}
+
+	// 没有配置代理或代理被禁用，使用原生 fetch
+	return fetch(url, options);
+}

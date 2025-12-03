@@ -5,12 +5,12 @@
 	"description": "An extension that integrates Openai Compatible Inference Providers into GitHub Copilot Chat",
 	"icon": "assets/logo.png",
 	"keywords": [
-        "ai",
-        "chat",
-        "copilot",
-        "github-copilot",
-        "language-model"
-    ],
+		"ai",
+		"chat",
+		"copilot",
+		"github-copilot",
+		"language-model"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/JohnnyZ93/oai-compatible-copilot"
@@ -20,8 +20,8 @@
 		"vscode": "^1.104.0"
 	},
 	"extensionDependencies": [
-        "github.copilot-chat"
-    ],
+		"github.copilot-chat"
+	],
 	"categories": [
 		"AI",
 		"Chat"
@@ -38,10 +38,10 @@
 	},
 	"license": "MIT",
 	"enabledApiProposals": [
-        "chatProvider",
+		"chatProvider",
 		"languageModelDataPart",
 		"languageModelThinkingPart"
-    ],
+	],
 	"contributes": {
 		"languageModelChatProviders": [
 			{
@@ -336,14 +336,16 @@
 		"test": "npm run compile && vscode-test",
 		"build": "npx @vscode/vsce package -o extension.vsix"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"undici": "^7.16.0"
+	},
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
-		"@types/node": "^22",
 		"@types/mocha": "^10.0.6",
-		"@vscode/dts": "^0.4.1",
+		"@types/node": "^22",
 		"@types/vscode": "^1.104.0",
+		"@vscode/dts": "^0.4.1",
 		"@vscode/test-cli": "^0.0.11",
 		"@vscode/test-electron": "^2.5.2",
 		"eslint": "^9.13.0",

@@ -86,12 +86,21 @@ export class ConfigPanel {
 		const apiKey = await this._configManager.getApiKey();
 		const models = this._configManager.getModels();
 
+		// 读取代理配置
+		const httpConfig = vscode.workspace.getConfiguration("http");
+		const proxyUrl = httpConfig.get<string>("proxy") || "";
+		const proxyStrictSSL = httpConfig.get<boolean>("proxyStrictSSL", true);
+		const proxySupport = httpConfig.get<string>("proxySupport", "on");
+
 		this._panel.webview.postMessage({
 			command: "configLoaded",
 			data: {
 				baseUrl,
 				apiKey: apiKey || "",
 				models,
+				proxyUrl,
+				proxyStrictSSL,
+				proxySupport,
 			},
 		});
 	}
@@ -182,6 +191,32 @@ export class ConfigPanel {
 					});
 				}
 				break;
+
+			case "saveProxy":
+				try {
+					const httpConfig = vscode.workspace.getConfiguration("http");
+					const { proxyUrl, proxyStrictSSL, proxySupport } = message.data;
+
+					// 保存代理配置到全局设置
+					await httpConfig.update("proxy", proxyUrl || undefined, vscode.ConfigurationTarget.Global);
+					await httpConfig.update("proxyStrictSSL", proxyStrictSSL, vscode.ConfigurationTarget.Global);
+					await httpConfig.update("proxySupport", proxySupport, vscode.ConfigurationTarget.Global);
+
+					this._panel.webview.postMessage({
+						command: "proxyResult",
+						data: { success: true, message: "代理配置已保存成功！" },
+					});
+					vscode.window.showInformationMessage("代理配置已保存成功！");
+				} catch (error) {
+					this._panel.webview.postMessage({
+						command: "proxyResult",
+						data: {
+							success: false,
+							message: `保存失败: ${error instanceof Error ? error.message : String(error)}`,
+						},
+					});
+				}
+				break;
 		}
 	}
 
@@ -229,6 +264,43 @@ export class ConfigPanel {
                 <button id="saveApiKey" class="btn btn-primary">保存</button>
                 <button id="testConnection" class="btn btn-secondary">测试连接</button>
                 <span id="connectionStatus" class="status-message"></span>
+            </div>
+        </section>
+
+        <!-- 代理配置区 -->
+        <section class="config-section">
+            <h2>代理配置</h2>
+            <p style="color: var(--vscode-descriptionForeground); margin-bottom: 15px; font-size: 13px;">
+                配置代理以解决 DNS 污染或网络访问问题。支持 HTTP/HTTPS/SOCKS5 代理。
+            </p>
+            <div class="form-group">
+                <label for="proxyUrl">代理地址:</label>
+                <input type="text" id="proxyUrl" placeholder="例如: http://127.0.0.1:7897" />
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px;">
+                    支持格式：http://127.0.0.1:7897 或 socks5://127.0.0.1:1080
+                </small>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="proxyStrictSSL" />
+                    <span style="margin-left: 8px;">严格验证 SSL 证书</span>
+                </label>
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px; margin-left: 24px;">
+                    某些代理可能需要禁用此选项
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="proxySupport">代理支持级别:</label>
+                <select id="proxySupport">
+                    <option value="on">启用代理</option>
+                    <option value="off">禁用代理</option>
+                    <option value="fallback">代理失败时回退到直连</option>
+                    <option value="override">强制使用代理</option>
+                </select>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <button id="saveProxy" class="btn btn-primary">保存代理配置</button>
+                <span id="proxyStatus" class="status-message"></span>
             </div>
         </section>
 

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import type { HFModelItem } from "../types";
+import { fetchWithProxy } from "../utils";
 
 /**
  * 配置管理器 - 封装配置读写逻辑
@@ -73,7 +74,7 @@ export class ConfigManager {
 				return { success: false, message: "API Key不能为空" };
 			}
 
-			const resp = await fetch(`${baseUrl.replace(/\/+$/, "")}/models`, {
+			const resp = await fetchWithProxy(`${baseUrl.replace(/\/+$/, "")}/models`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${apiKey}`,
@@ -119,7 +120,7 @@ export class ConfigManager {
 				return { success: false, message: "API Key不能为空" };
 			}
 
-			const resp = await fetch(`${baseUrl.replace(/\/+$/, "")}/models`, {
+			const resp = await fetchWithProxy(`${baseUrl.replace(/\/+$/, "")}/models`, {
 				method: "GET",
 				headers: {
 					Authorization: `Bearer ${apiKey}`,

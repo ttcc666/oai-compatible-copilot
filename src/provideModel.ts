@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { CancellationToken, LanguageModelChatInformation } from "vscode";
 
 import type { HFModelItem, HFModelsResponse } from "./types";
+import { fetchWithProxy } from "./utils";
 
 const DEFAULT_CONTEXT_LENGTH = 256000;
 const DEFAULT_MAX_TOKENS = 8132;
@@ -46,7 +47,8 @@ export async function prepareLanguageModelChatInformation(
 				maxInputTokens: maxInput,
 				maxOutputTokens: maxOutput,
 				capabilities: {
-					toolCalling: true,
+					// 允许用户在配置中明确禁用工具调用
+					toolCalling: m?.toolCalling !== false,
 					imageInput: m?.vision ?? false,
 				},
 			} satisfies LanguageModelChatInformation;
@@ -131,7 +133,7 @@ async function fetchModels(apiKey: string, userAgent: string): Promise<{ models:
 		throw new Error(`Invalid base URL configuration.`);
 	}
 	const modelsList = (async () => {
-		const resp = await fetch(`${BASE_URL.replace(/\/+$/, "")}/models`, {
+		const resp = await fetchWithProxy(`${BASE_URL.replace(/\/+$/, "")}/models`, {
 			method: "GET",
 			headers: { Authorization: `Bearer ${apiKey}`, "User-Agent": userAgent },
 		});

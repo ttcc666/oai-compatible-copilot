@@ -162,6 +162,93 @@ You can specify custom HTTP headers that will be sent with every request to a sp
 
 ---
 
+## 🌐 代理配置
+
+如果你的网络环境需要通过代理访问 API（例如解决 DNS 污染问题），本扩展支持自动使用 VSCode 的代理设置。
+
+### 配置方法
+
+在 VSCode 设置中配置代理（`settings.json` 或设置界面）：
+
+```json
+{
+  "http.proxy": "http://127.0.0.1:7897",
+  "http.proxyStrictSSL": false,
+  "http.proxySupport": "on"
+}
+```
+
+### 配置说明
+
+- **http.proxy**: 代理服务器地址
+  - 支持 HTTP 代理：`http://127.0.0.1:7897`
+  - 支持 HTTPS 代理：`https://127.0.0.1:7897`
+  - 支持 SOCKS5 代理：`socks5://127.0.0.1:1080`
+
+- **http.proxyStrictSSL**: SSL 证书验证
+  - `true`: 严格验证 SSL 证书（默认，更安全）
+  - `false`: 跳过 SSL 证书验证（某些代理需要此设置）
+
+- **http.proxySupport**: 代理支持级别
+  - `on`: 启用代理（默认）
+  - `off`: 禁用代理
+  - `fallback`: 代理失败时自动回退到直连
+  - `override`: 强制使用代理
+
+### 常见代理工具配置示例
+
+#### V2Ray
+```json
+{
+  "http.proxy": "http://127.0.0.1:10809",
+  "http.proxyStrictSSL": false
+}
+```
+
+#### Clash
+```json
+{
+  "http.proxy": "http://127.0.0.1:7890",
+  "http.proxyStrictSSL": false
+}
+```
+
+#### Shadowsocks（SOCKS5）
+```json
+{
+  "http.proxy": "socks5://127.0.0.1:1080",
+  "http.proxyStrictSSL": false
+}
+```
+
+### 验证代理是否生效
+
+1. 配置代理后，重启 VSCode
+2. 打开 Copilot Chat 并发送消息
+3. 打开输出面板（查看 → 输出）
+4. 选择 "OAI Compatible Model Provider"
+5. 查看是否有 "Using proxy" 日志
+
+### 常见问题
+
+**Q: 配置代理后仍然无法连接？**
+- 确认代理服务器正在运行
+- 检查代理地址和端口是否正确
+- 尝试设置 `http.proxyStrictSSL: false`
+- 查看输出面板的错误日志
+
+**Q: 如何解决 DNS 污染问题？**
+- 配置本地代理（V2Ray/Clash 等）
+- 在 VSCode 设置中配置代理地址
+- 重启 VSCode 使配置生效
+
+**Q: 代理会影响其他扩展吗？**
+- 不会，这是 VSCode 的全局代理设置
+- 所有支持代理的扩展都会使用此配置
+- 如果只想为本扩展配置代理，可以使用 VSCode 的工作区设置
+
+---
+
 ## Model Parameters
 All parameters support individual configuration for different models, providing highly flexible model tuning capabilities.
 
