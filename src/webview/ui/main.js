@@ -7,6 +7,7 @@ const vscode = acquireVsCodeApi();
 // 状态管理
 let currentModels = [];
 let editingIndex = -1;
+let selectedModelIndices = new Set(); // 存储选中的模型索引
 
 // DOM元素
 const baseUrlInput = document.getElementById("baseUrl");
@@ -35,6 +36,11 @@ const saveModelBtn = document.getElementById("saveModel");
 const cancelModelBtn = document.getElementById("cancelModel");
 const saveAllConfigBtn = document.getElementById("saveAllConfig");
 const saveStatus = document.getElementById("saveStatus");
+const retryEnabledCheckbox = document.getElementById("retryEnabled");
+const maxAttemptsInput = document.getElementById("maxAttempts");
+const retryIntervalInput = document.getElementById("retryInterval");
+const saveRetryBtn = document.getElementById("saveRetry");
+const retryStatus = document.getElementById("retryStatus");
 
 // 初始化
 window.addEventListener("load", () => {
@@ -68,6 +74,13 @@ window.addEventListener("message", (event) => {
 			// 用户确认删除，执行删除操作
 			executeDelete(message.data.index);
 			break;
+		case "confirmBatchDelete":
+			// 用户确认批量删除，执行批量删除操作
+			executeBatchDelete(message.data.indices);
+			break;
+		case "retryResult":
+			showRetryStatus(message.data);
+			break;
 	}
 });
 
@@ -75,6 +88,21 @@ window.addEventListener("message", (event) => {
 function executeDelete(index) {
 	console.log("Executing delete for index:", index);
 	currentModels.splice(index, 1);
+
+	// 清理选中状态中的该索引
+	selectedModelIndices.delete(index);
+
+	// 重新映射选中索引（因为删除后索引会变化）
+	const newSelectedIndices = new Set();
+	selectedModelIndices.forEach(idx => {
+		if (idx > index) {
+			newSelectedIndices.add(idx - 1);
+		} else if (idx < index) {
+			newSelectedIndices.add(idx);
+		}
+	});
+	selectedModelIndices = newSelectedIndices;
+
 	renderModelsTable();
 
 	// 自动保存配置
@@ -98,6 +126,12 @@ function loadConfig(data) {
 	proxyUrlInput.value = data.proxyUrl || "";
 	proxyStrictSSLCheckbox.checked = data.proxyStrictSSL !== false; // 默认为 true
 	proxySupportSelect.value = data.proxySupport || "on";
+
+	// 加载重试配置
+	retryEnabledCheckbox.checked = data.retryEnabled !== false; // 默认为 true
+	maxAttemptsInput.value = data.maxAttempts || 3;
+	retryIntervalInput.value = data.retryInterval || 1000;
+
 	currentModels = data.models || [];
 	renderModelsTable();
 }
@@ -120,6 +154,10 @@ function renderModelsTable() {
         const row = document.createElement("tr");
         // 使用新的图标按钮结构
         row.innerHTML = `
+            <td style="text-align: center;">
+                <input type="checkbox" class="model-checkbox" data-index="${index}"
+                       ${selectedModelIndices.has(index) ? 'checked' : ''} />
+            </td>
             <td><strong style="color: var(--vscode-textLink-foreground);">${escapeHtml(model.id)}</strong></td>
             <td>${escapeHtml(model.owned_by)}</td>
             <td>${model.context_length || 256000}</td>
@@ -156,6 +194,140 @@ function renderModelsTable() {
             deleteModel(index);
         });
     });
+
+    // 绑定全选复选框事件
+    const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener("change", toggleSelectAll);
+    }
+
+    // 绑定单个复选框事件
+    document.querySelectorAll(".model-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", (e) => {
+            const index = parseInt(e.target.getAttribute("data-index"));
+            toggleModelSelection(index);
+        });
+    });
+
+    // 更新全选复选框和批量删除按钮状态
+    updateSelectAllCheckbox();
+    updateBatchDeleteButton();
+}
+
+// 全选/取消全选函数
+function toggleSelectAll() {
+	const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+	const isChecked = selectAllCheckbox.checked;
+
+	if (isChecked) {
+		// 全选
+		currentModels.forEach((_, index) => selectedModelIndices.add(index));
+	} else {
+		// 取消全选
+		selectedModelIndices.clear();
+	}
+
+	renderModelsTable();
+	updateBatchDeleteButton();
+}
+
+// 单个复选框切换函数
+function toggleModelSelection(index) {
+	if (selectedModelIndices.has(index)) {
+		selectedModelIndices.delete(index);
+	} else {
+		selectedModelIndices.add(index);
+	}
+
+	updateSelectAllCheckbox();
+	updateBatchDeleteButton();
+}
+
+// 更新全选复选框状态
+function updateSelectAllCheckbox() {
+	const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+	if (!selectAllCheckbox) return;
+
+	const totalModels = currentModels.length;
+	const selectedCount = selectedModelIndices.size;
+
+	if (selectedCount === 0) {
+		selectAllCheckbox.checked = false;
+		selectAllCheckbox.indeterminate = false;
+	} else if (selectedCount === totalModels) {
+		selectAllCheckbox.checked = true;
+		selectAllCheckbox.indeterminate = false;
+	} else {
+		selectAllCheckbox.checked = false;
+		selectAllCheckbox.indeterminate = true; // 半选状态
+	}
+}
+
+// 更新批量删除按钮显示
+function updateBatchDeleteButton() {
+	const batchDeleteBtn = document.getElementById("batchDeleteBtn");
+	if (!batchDeleteBtn) return;
+
+	const selectedCount = selectedModelIndices.size;
+	if (selectedCount > 0) {
+		batchDeleteBtn.style.display = "inline-flex";
+		batchDeleteBtn.textContent = `批量删除 (${selectedCount})`;
+	} else {
+		batchDeleteBtn.style.display = "none";
+	}
+}
+
+// 批量删除函数
+function batchDeleteModels() {
+	if (selectedModelIndices.size === 0) {
+		showMessage("请先选择要删除的模型", "warning");
+		return;
+	}
+
+	// 获取选中的模型信息
+	const selectedModels = Array.from(selectedModelIndices)
+		.sort((a, b) => a - b)
+		.map(index => ({
+			index,
+			id: currentModels[index].id,
+			owned_by: currentModels[index].owned_by
+		}));
+
+	// 发送批量删除请求到后端
+	vscode.postMessage({
+		command: "batchDeleteModels",
+		data: { models: selectedModels }
+	});
+}
+
+// 执行批量删除
+function executeBatchDelete(indices) {
+	console.log("Executing batch delete for indices:", indices);
+
+	// 按降序排序，从后往前删除，避免索引错乱
+	const sortedIndices = [...indices].sort((a, b) => b - a);
+
+	sortedIndices.forEach(index => {
+		currentModels.splice(index, 1);
+	});
+
+	// 清空选中状态
+	selectedModelIndices.clear();
+
+	renderModelsTable();
+	updateBatchDeleteButton();
+
+	// 自动保存配置
+	const baseUrl = baseUrlInput.value.trim();
+	if (baseUrl) {
+		vscode.postMessage({
+			command: "saveAllConfig",
+			data: {
+				baseUrl,
+				models: currentModels,
+			},
+		});
+	}
 }
 
 // 显示连接状态
@@ -225,6 +397,17 @@ function showProxyStatus(data) {
 
 	setTimeout(() => {
 		proxyStatus.textContent = "";
+	}, 3000);
+}
+
+// 显示重试保存状态
+function showRetryStatus(data) {
+	retryStatus.textContent = data.message;
+	retryStatus.className = `status-message ${data.success ? "success" : "error"}`;
+	saveRetryBtn.disabled = false;
+
+	setTimeout(() => {
+		retryStatus.textContent = "";
 	}, 3000);
 }
 
@@ -441,6 +624,43 @@ saveProxyBtn.addEventListener("click", () => {
 			proxyUrl,
 			proxyStrictSSL,
 			proxySupport,
+		},
+	});
+});
+
+// 批量删除按钮事件
+const batchDeleteBtn = document.getElementById("batchDeleteBtn");
+if (batchDeleteBtn) {
+	batchDeleteBtn.addEventListener("click", batchDeleteModels);
+}
+
+// 保存重试配置按钮事件
+saveRetryBtn.addEventListener("click", () => {
+	const retryEnabled = retryEnabledCheckbox.checked;
+	const maxAttempts = parseInt(maxAttemptsInput.value) || 3;
+	const retryInterval = parseInt(retryIntervalInput.value) || 1000;
+
+	// 前端验证
+	if (maxAttempts < 1 || maxAttempts > 10) {
+		showMessage("最大重试次数必须在 1-10 之间", "error");
+		return;
+	}
+
+	if (retryInterval < 100) {
+		showMessage("重试间隔必须大于等于 100 毫秒", "error");
+		return;
+	}
+
+	saveRetryBtn.disabled = true;
+	retryStatus.textContent = "保存中...";
+	retryStatus.className = "status-message";
+
+	vscode.postMessage({
+		command: "saveRetry",
+		data: {
+			retryEnabled,
+			maxAttempts,
+			retryInterval,
 		},
 	});
 });

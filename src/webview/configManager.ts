@@ -62,6 +62,40 @@ export class ConfigManager {
 	}
 
 	/**
+	 * 获取重试配置
+	 */
+	getRetryConfig(): { enabled: boolean; max_attempts: number; interval_ms: number } {
+		const config = vscode.workspace.getConfiguration();
+		const retryConfig = config.get<{
+			enabled?: boolean;
+			max_attempts?: number;
+			interval_ms?: number;
+		}>("oaicopilot.retry", {
+			enabled: true,
+			max_attempts: 3,
+			interval_ms: 1000,
+		});
+
+		return {
+			enabled: retryConfig.enabled ?? true,
+			max_attempts: retryConfig.max_attempts ?? 3,
+			interval_ms: retryConfig.interval_ms ?? 1000,
+		};
+	}
+
+	/**
+	 * 设置重试配置
+	 */
+	async setRetryConfig(retryConfig: {
+		enabled: boolean;
+		max_attempts: number;
+		interval_ms: number;
+	}): Promise<void> {
+		const config = vscode.workspace.getConfiguration();
+		await config.update("oaicopilot.retry", retryConfig, vscode.ConfigurationTarget.Global);
+	}
+
+	/**
 	 * 测试连接 - 验证Base URL和API Key是否有效
 	 */
 	async testConnection(baseUrl: string, apiKey: string): Promise<{ success: boolean; message: string }> {

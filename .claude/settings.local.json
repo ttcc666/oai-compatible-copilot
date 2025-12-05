@@ -10,7 +10,10 @@
       "Bash(npm run build)",
       "Bash(Get-ChildItem -Path \"out/webview/ui\" -File)",
       "Bash(node:*)",
-      "Bash(npm install undici)"
+      "Bash(npm install undici)",
+      "Bash(Get-ChildItem -Path src -Recurse -File)",
+      "Bash(Select-Object -First 30 FullName)",
+      "Bash(Get-ChildItem -Path \"d:\\Study\\Github\\oai-myself\\src\" -Recurse -File)"
     ],
     "deny": [],
     "ask": []

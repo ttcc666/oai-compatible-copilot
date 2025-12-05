@@ -92,6 +92,9 @@ export class ConfigPanel {
 		const proxyStrictSSL = httpConfig.get<boolean>("proxyStrictSSL", true);
 		const proxySupport = httpConfig.get<string>("proxySupport", "on");
 
+		// 读取重试配置
+		const retryConfig = this._configManager.getRetryConfig();
+
 		this._panel.webview.postMessage({
 			command: "configLoaded",
 			data: {
@@ -101,6 +104,9 @@ export class ConfigPanel {
 				proxyUrl,
 				proxyStrictSSL,
 				proxySupport,
+				retryEnabled: retryConfig.enabled,
+				maxAttempts: retryConfig.max_attempts,
+				retryInterval: retryConfig.interval_ms,
 			},
 		});
 	}
@@ -151,6 +157,42 @@ export class ConfigPanel {
 					this._panel.webview.postMessage({
 						command: "confirmDelete",
 						data: { index: message.data.index },
+					});
+				}
+				break;
+
+			case "batchDeleteModels":
+				// 批量删除模型
+				const modelsToDelete = message.data.models as Array<{
+					index: number;
+					id: string;
+					owned_by: string;
+				}>;
+
+				if (!modelsToDelete || modelsToDelete.length === 0) {
+					vscode.window.showWarningMessage("没有选中要删除的模型");
+					break;
+				}
+
+				// 构建确认消息
+				const modelList = modelsToDelete
+					.map(m => `  • ${m.id} (${m.owned_by})`)
+					.join("\n");
+
+				const confirmMessage = `确定要删除以下 ${modelsToDelete.length} 个模型吗？\n\n${modelList}`;
+
+				// 显示确认对话框
+				const batchConfirmed = await vscode.window.showWarningMessage(
+					confirmMessage,
+					{ modal: true },
+					"删除"
+				);
+
+				if (batchConfirmed === "删除") {
+					// 通知Webview执行批量删除
+					this._panel.webview.postMessage({
+						command: "confirmBatchDelete",
+						data: { indices: modelsToDelete.map(m => m.index) },
 					});
 				}
 				break;
@@ -210,6 +252,44 @@ export class ConfigPanel {
 				} catch (error) {
 					this._panel.webview.postMessage({
 						command: "proxyResult",
+						data: {
+							success: false,
+							message: `保存失败: ${error instanceof Error ? error.message : String(error)}`,
+						},
+					});
+				}
+				break;
+
+			case "saveRetry":
+				try {
+					const { retryEnabled, maxAttempts, retryInterval } = message.data;
+
+					// 验证输入
+					if (typeof retryEnabled !== "boolean") {
+						throw new Error("重试启用状态必须是布尔值");
+					}
+					if (typeof maxAttempts !== "number" || maxAttempts < 1 || maxAttempts > 10) {
+						throw new Error("最大重试次数必须在 1-10 之间");
+					}
+					if (typeof retryInterval !== "number" || retryInterval < 100) {
+						throw new Error("重试间隔必须大于等于 100 毫秒");
+					}
+
+					// 保存重试配置
+					await this._configManager.setRetryConfig({
+						enabled: retryEnabled,
+						max_attempts: maxAttempts,
+						interval_ms: retryInterval,
+					});
+
+					this._panel.webview.postMessage({
+						command: "retryResult",
+						data: { success: true, message: "重试配置已保存成功！" },
+					});
+					vscode.window.showInformationMessage("重试配置已保存成功！");
+				} catch (error) {
+					this._panel.webview.postMessage({
+						command: "retryResult",
 						data: {
 							success: false,
 							message: `保存失败: ${error instanceof Error ? error.message : String(error)}`,
@@ -304,12 +384,45 @@ export class ConfigPanel {
             </div>
         </section>
 
+        <!-- 重试配置区 -->
+        <section class="config-section">
+            <h2>重试配置</h2>
+            <p style="color: var(--vscode-descriptionForeground); margin-bottom: 15px; font-size: 13px;">
+                配置 API 请求失败时的自动重试机制，适用于 429、500、502、503、504 等错误。
+            </p>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="retryEnabled" />
+                    <span style="margin-left: 8px;">启用自动重试</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="maxAttempts">最大重试次数:</label>
+                <input type="number" id="maxAttempts" placeholder="默认: 3" min="1" max="10" />
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px;">
+                    建议范围：1-10 次
+                </small>
+            </div>
+            <div class="form-group">
+                <label for="retryInterval">重试间隔 (毫秒):</label>
+                <input type="number" id="retryInterval" placeholder="默认: 1000" min="100" step="100" />
+                <small style="color: var(--vscode-descriptionForeground); display: block; margin-top: 5px;">
+                    建议范围：100-5000 毫秒（1000ms = 1秒）
+                </small>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <button id="saveRetry" class="btn btn-primary">保存重试配置</button>
+                <span id="retryStatus" class="status-message"></span>
+            </div>
+        </section>
+
         <!-- 模型管理区 -->
         <section class="config-section">
             <h2>模型管理</h2>
             <div class="form-group">
                 <button id="fetchModels" class="btn btn-primary">从API获取模型</button>
                 <button id="toggleAddModel" class="btn btn-secondary">手动添加模型</button>
+                <button id="batchDeleteBtn" class="btn btn-danger" style="display: none;">批量删除</button>
             </div>
 
             <!-- 已配置模型列表 -->
@@ -319,6 +432,9 @@ export class ConfigPanel {
                     <table id="modelsTable">
                         <thead>
                             <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="selectAllCheckbox" title="全选/取消全选" />
+                                </th>
                                 <th>模型ID</th>
                                 <th>提供商</th>
                                 <th>上下文长度</th>

@@ -194,3 +194,36 @@ input:focus {
 }
 .full-width { grid-column: span 2; }
 .required { color: var(--vscode-errorForeground); margin-left: 2px; }
+
+/* 批量删除按钮样式 */
+.btn-danger {
+    color: var(--vscode-errorForeground);
+    background-color: transparent;
+    border: 1px solid var(--vscode-errorForeground);
+}
+
+.btn-danger:hover {
+    background-color: var(--vscode-errorForeground);
+    color: var(--vscode-editor-background);
+}
+
+/* 复选框样式 */
+input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+/* 表格操作列样式 */
+.table-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+/* 半选状态样式 */
+input[type="checkbox"]:indeterminate {
+    opacity: 0.6;
+}
