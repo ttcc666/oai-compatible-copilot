@@ -21,7 +21,6 @@ import {
 	convertTools,
 	convertMessages,
 	tryParseJSONObject,
-	validateRequest,
 	parseModelId,
 	createRetryConfig,
 	executeWithRetry,
@@ -179,9 +178,6 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 				throw new Error(`Cannot have more than ${MAX_TOOLS_PER_REQUEST} tools per request.`);
 			}
 
-			const openaiMessages = convertMessages(messages);
-			validateRequest(messages);
-
 			// get model config from user settings
 			const config = vscode.workspace.getConfiguration();
 			const userModels = config.get<HFModelItem[]>("oaicopilot.models", []);
@@ -203,6 +199,13 @@ export class HuggingFaceChatModelProvider implements LanguageModelChatProvider {
 			if (!um) {
 				um = userModels.find((um) => um.id === parsedModelId.baseId);
 			}
+
+			// Prepare model configuration for message conversion
+			const modelConfig = {
+				includeReasoningInRequest: um?.include_reasoning_in_request ?? false,
+			};
+
+			const openaiMessages = convertMessages(messages, modelConfig);
 
 			// Get API key for the model's provider
 			const provider = um?.owned_by;
